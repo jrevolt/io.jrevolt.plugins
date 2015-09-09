@@ -1,0 +1,86 @@
+buildscript {
+	println("Using profile: ${profile}")
+	File f = new File("${project.projectDir}/gradle-${profile}.properties")
+	if (f.exists()) {
+		println("Loading $f.absoluteFile")
+		Properties props = new Properties()
+		props.load(f.newDataInputStream())
+		for (String s : props.stringPropertyNames()) {
+			setProperty(s, props.getProperty(s))
+		}
+	}
+	ext.cfg = project.properties
+
+	ext {
+	}
+
+	repositories {
+		maven { url "$cfg.repository" }
+	}
+	dependencies {
+	}
+}
+
+ext {
+	branch = "$git rev-parse --abbrev-ref HEAD".execute().in.text.trim()
+	branchShort = branch.replaceFirst(".*/", "")
+	commit = "$git rev-parse HEAD".execute().in.text.trim()
+	commitShort = commit.substring(0, 7)
+	gitDescribe = "$git describe --match=${basetag} --tags --dirty".execute().in.text.trim()
+	snapshotVersion = "${branchShort}-SNAPSHOT"
+	releaseVersion = "${gitDescribe}"
+}
+
+allprojects {
+}
+
+subprojects {
+	apply plugin: 'java'
+	apply plugin: 'maven'
+	apply plugin: 'distribution'
+
+	project.group = rootProject.name
+	project.version = Boolean.valueOf("${release}") ? "${releaseVersion}" : "${snapshotVersion}"
+
+	sourceCompatibility = 1.7
+	targetCompatibility = 1.7
+
+	// WARNING: Gradle 1.11 uses ASM that does not yet support bytecode produced with -parameters. Tests will fail
+	//[compileJava, compileTestJava]*.options*.compilerArgs = ['-parameters']
+
+	buildDir = "${rootProject.projectDir}/.build/${project.name}"
+	sourceSets {
+		main { [java, resources]*.srcDir 'src/main/java'; }
+		test { [java, resources]*.srcDir 'src/test/java'; }
+	}
+
+	dependencies {
+	}
+
+	repositories {
+		maven { url "$cfg.repository"; }
+	}
+
+	// FIXME QDH don't know yet how to get rid of distZip and distTar artifacts
+	configurations.archives.artifacts.with { archives ->
+		new ArrayList(archives).each {
+			if (it.file.name.matches('.*(zip|tar)$')) {
+				remove(it)
+			}
+		}
+	}
+
+	uploadArchives {
+		repositories {
+			mavenDeployer {
+				repository(url: releaseVersion ? "$cfg.releases" : "$cfg.snapshots") {
+					authentication(userName: "$cfg.deploymentUserName", password: "$cfg.deploymentPassword")
+				}
+			}
+		}
+	}
+}
+
+
+
+

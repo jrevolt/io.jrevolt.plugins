@@ -1,0 +1,10 @@
+rootProject.name = 'io.jrevolt.plugins'
+
+include 'gradle'
+include 'maven'
+
+
+
+
+
+
