@@ -1,0 +1,9 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+    //compile 'org.gradle:gradle-plugins:2.6.0'
+    //compile 'org.springframework:spring-core:4.2.1.RELEASE'
+}

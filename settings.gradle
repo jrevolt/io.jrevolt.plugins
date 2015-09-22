@@ -3,8 +3,4 @@ rootProject.name = 'io.jrevolt.plugins'
 include 'gradle'
 include 'maven'
 
-
-
-
-
-
+rootProject.children.each { it.name = "$rootProject.name.$it.name" }
